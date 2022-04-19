@@ -83,6 +83,29 @@ void Mode0()
   LedCube_SetLed( ThreeRow, ThreeColumn, 3 ); 
 }
 
+// Makes LEDs chase each other around the cube.
+int ChaseRow = 0, ChaseCol = 0, ChaseLayer = 0;
+int ChasePos = 0, ChaseIncrement = 1;
+void MoveChase() {
+    ChaseRow = min(ChasePos % 8, (63 - ChasePos) % 8);
+    ChaseCol = min((ChasePos / 4) % 8, (63 - (ChasePos / 4)) % 8);
+    ChaseLayer = min((ChasePos / 16) % 8, (63 - (ChasePos / 16)) % 8);
+    
+    if(ChasePos == 0) {
+      ChaseIncrement = 1;
+    } else if(ChasePos == 63) {
+      ChaseIncrement = -1;
+    }
+
+    ChasePos += ChaseIncrement;
+}
+
+void Chase() {
+  LedCube_ClearData();
+  LedCube_SetLed(ChaseRow, ChaseCol, ChaseLayer);
+  MoveChase();
+}
+
 // setup code, run once:
 void setup()
 {
@@ -111,17 +134,27 @@ int Mode = 0;
 void loop()
 {
   // 2000 millisecond timer to update display
-  if ( millis() - Timer >= 2000 )
+  if ( millis() - Timer >= 200 )
   {
       // Extra modes could be done here.
-      Mode0();
+      switch(Mode) {
+        case 0:
+          Mode0();
+          break;
+        case 1:
+          Chase();
+          break;
+      }
      
-    Timer += 2000; // Update timer
+    Timer += 200; // Update timer
 
   } // End of timer if.
 
   if( ButtonNextState(digitalRead(4)) == 1 )
   {
-      // Mode could be changed here.
+     Mode = (Mode + 1) % 3;
+        
+     // Mode Reset
+     ChasePos = 0;     
   }
 } // End of loop.
