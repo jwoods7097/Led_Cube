@@ -2,8 +2,6 @@
 #include <MsTimer2.h>
 
 unsigned long Timer = 0;
-int layer = 0;
-int increment = 1;
 
 #include "LedCubeData.h"
 #include "ButtonDebounce.h"
@@ -85,6 +83,31 @@ void Mode0()
   LedCube_SetLed( ThreeRow, ThreeColumn, 3 );
 }
 
+// Makes LEDs chase each other around the cube.
+int ChaseRow = 0, ChaseCol = 0, ChaseLayer = 0;
+int ChasePos = 0, ChaseIncrement = 1;
+void MoveChase() {
+    ChaseRow = min(ChasePos % 8, (63 - ChasePos) % 8);
+    ChaseCol = min((ChasePos / 4) % 8, (63 - (ChasePos / 4)) % 8);
+    ChaseLayer = min((ChasePos / 16) % 8, (63 - (ChasePos / 16)) % 8);
+    
+    if(ChasePos == 0) {
+      ChaseIncrement = 1;
+    } else if(ChasePos == 63) {
+      ChaseIncrement = -1;
+    }
+
+    ChasePos += ChaseIncrement;
+}
+
+void Chase() {
+  LedCube_ClearData();
+  LedCube_SetLed(ChaseRow, ChaseCol, ChaseLayer);
+  MoveChase();
+}
+
+int layer = 0;
+int increment = 1;
 void MoveLayer() {
   if (layer == 0) {
     increment = 1;
@@ -95,12 +118,7 @@ void MoveLayer() {
   layer += increment;
 }
 
-void Chase() {
-  LedCube_ClearData();
-  LedCube_SetLed(ChaseRow, ChaseCol, ChaseLayer);
-  MoveChase();
-}
-
+// Shift through all the horizontal layers
 void Layers() {
   LedCube_ClearData();
 
@@ -123,6 +141,19 @@ void Layers() {
   LedCube_SetLed(3, 1, layer);
   LedCube_SetLed(3, 2, layer);
   LedCube_SetLed(3, 3, layer);
+
+  MoveLayer();
+}
+
+// Shift through all the vertical layers
+void Vertical() {
+  LedCube_ClearData();
+
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < 4; j++) {
+      LedCube_SetLed(i, layer, j);
+    }
+  }
 
   MoveLayer();
 }
@@ -168,6 +199,9 @@ void loop()
       case 2:
         Layers();
         break;
+      case 3:
+        Vertical();
+        break;
     }
 
     Timer += 200; // Update timer
@@ -176,7 +210,7 @@ void loop()
 
   if ( ButtonNextState(digitalRead(4)) == 1 )
   {
-    Mode = (Mode + 1) % 3;
+    Mode = (Mode + 1) % 4;
 
     // Mode Reset
   }
