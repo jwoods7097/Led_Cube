@@ -2,6 +2,8 @@
 #include <MsTimer2.h>
 
 unsigned long Timer = 0;
+int layer = 0;
+int increment = 1;
 
 #include "LedCubeData.h"
 #include "ButtonDebounce.h"
@@ -74,36 +76,55 @@ void Mode0()
 {
   LedCube_ClearData();
   MoveZero();
-  LedCube_SetLed( ZeroRow,  ZeroColumn,  0 ); 
+  LedCube_SetLed( ZeroRow,  ZeroColumn,  0 );
   MoveOne();
-  LedCube_SetLed( OneRow,   OneColumn,   1 ); 
+  LedCube_SetLed( OneRow,   OneColumn,   1 );
   MoveTwo();
-  LedCube_SetLed( TwoRow,   TwoColumn,   2 ); 
+  LedCube_SetLed( TwoRow,   TwoColumn,   2 );
   MoveThree();
-  LedCube_SetLed( ThreeRow, ThreeColumn, 3 ); 
+  LedCube_SetLed( ThreeRow, ThreeColumn, 3 );
 }
 
-// Makes LEDs chase each other around the cube.
-int ChaseRow = 0, ChaseCol = 0, ChaseLayer = 0;
-int ChasePos = 0, ChaseIncrement = 1;
-void MoveChase() {
-    ChaseRow = min(ChasePos % 8, (63 - ChasePos) % 8);
-    ChaseCol = min((ChasePos / 4) % 8, (63 - (ChasePos / 4)) % 8);
-    ChaseLayer = min((ChasePos / 16) % 8, (63 - (ChasePos / 16)) % 8);
-    
-    if(ChasePos == 0) {
-      ChaseIncrement = 1;
-    } else if(ChasePos == 63) {
-      ChaseIncrement = -1;
-    }
+void MoveLayer() {
+  if (layer == 0) {
+    increment = 1;
+  } else if (layer == 3) {
+    increment = -1;
+  }
 
-    ChasePos += ChaseIncrement;
+  layer += increment;
 }
 
 void Chase() {
   LedCube_ClearData();
   LedCube_SetLed(ChaseRow, ChaseCol, ChaseLayer);
   MoveChase();
+}
+
+void Layers() {
+  LedCube_ClearData();
+
+  LedCube_SetLed(0, 0, layer);
+  LedCube_SetLed(0, 1, layer);
+  LedCube_SetLed(0, 2, layer);
+  LedCube_SetLed(0, 3, layer);
+
+  LedCube_SetLed(1, 0, layer);
+  LedCube_SetLed(1, 1, layer);
+  LedCube_SetLed(1, 2, layer);
+  LedCube_SetLed(1, 3, layer);
+
+  LedCube_SetLed(2, 0, layer);
+  LedCube_SetLed(2, 1, layer);
+  LedCube_SetLed(2, 2, layer);
+  LedCube_SetLed(2, 3, layer);
+
+  LedCube_SetLed(3, 0, layer);
+  LedCube_SetLed(3, 1, layer);
+  LedCube_SetLed(3, 2, layer);
+  LedCube_SetLed(3, 3, layer);
+
+  MoveLayer();
 }
 
 // setup code, run once:
@@ -120,9 +141,9 @@ void setup()
   SPI.begin();
   // Set the parameters for the transfers.
   SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-  
+
   ButtonInitialize();
-  
+
   // Timer for moving the ON led's
   Timer = millis();
 
@@ -136,25 +157,27 @@ void loop()
   // 2000 millisecond timer to update display
   if ( millis() - Timer >= 200 )
   {
-      // Extra modes could be done here.
-      switch(Mode) {
-        case 0:
-          Mode0();
-          break;
-        case 1:
-          Chase();
-          break;
-      }
-     
+    // Extra modes could be done here.
+    switch (Mode) {
+      case 0:
+        Mode0();
+        break;
+      case 1:
+        Chase();
+        break;
+      case 2:
+        Layers();
+        break;
+    }
+
     Timer += 200; // Update timer
 
   } // End of timer if.
 
-  if( ButtonNextState(digitalRead(4)) == 1 )
+  if ( ButtonNextState(digitalRead(4)) == 1 )
   {
-     Mode = (Mode + 1) % 3;
-        
-     // Mode Reset
-     ChasePos = 0;     
+    Mode = (Mode + 1) % 3;
+
+    // Mode Reset
   }
 } // End of loop.
