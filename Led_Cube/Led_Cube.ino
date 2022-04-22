@@ -87,17 +87,24 @@ void Mode0()
 int ChaseRow = 0, ChaseCol = 0, ChaseLayer = 0;
 int ChasePos = 0, ChaseIncrement = 1;
 void MoveChase() {
-    ChaseRow = min(ChasePos % 8, (63 - ChasePos) % 8);
-    ChaseCol = min((ChasePos / 4) % 8, (63 - (ChasePos / 4)) % 8);
-    ChaseLayer = min((ChasePos / 16) % 8, (63 - (ChasePos / 16)) % 8);
-    
-    if(ChasePos == 0) {
-      ChaseIncrement = 1;
-    } else if(ChasePos == 63) {
-      ChaseIncrement = -1;
-    }
+  // The row is incremented back and forth.
+  // The function below causes ChaseRow to follow the repeating sequence of values 0, 1, 2, 3, 3, 2, 1, 0
+  ChaseRow = min(ChasePos % 8, (63 - ChasePos) % 8);
+  // ChaseCol is incremented at 1/4 the speed of ChaseRow, so that each time
+  // ChaseRow reaches an edge of the cube, ChaseCol is advanced 1 column in the sequence.
+  ChaseCol = min((ChasePos / 4) % 8, (63 - (ChasePos / 4)) % 8);
+  // ChaseCol is incremented at 1/4 the speed of ChaseCol (and therefore 1/16 the speed of ChaseRow),
+  // so that each time ChaseCol reaches the edge of the cube ChaseLayer is advanced 1 layer in the sequence.
+  ChaseLayer = min((ChasePos / 16) % 8, (63 - (ChasePos / 16)) % 8);
 
-    ChasePos += ChaseIncrement;
+  // Switch the direction of the path when ChasePos reaches its min and max.
+  if(ChasePos == 0) {
+    ChaseIncrement = 1;
+  } else if(ChasePos == 63) {
+    ChaseIncrement = -1;
+  }
+
+  ChasePos += ChaseIncrement;
 }
 
 void Chase() {
@@ -106,6 +113,7 @@ void Chase() {
   MoveChase();
 }
 
+// Shared move code for Layers and Vertical patterns
 int layer = 0;
 int increment = 1;
 void MoveLayer() {
@@ -122,25 +130,11 @@ void MoveLayer() {
 void Layers() {
   LedCube_ClearData();
 
-  LedCube_SetLed(0, 0, layer);
-  LedCube_SetLed(0, 1, layer);
-  LedCube_SetLed(0, 2, layer);
-  LedCube_SetLed(0, 3, layer);
-
-  LedCube_SetLed(1, 0, layer);
-  LedCube_SetLed(1, 1, layer);
-  LedCube_SetLed(1, 2, layer);
-  LedCube_SetLed(1, 3, layer);
-
-  LedCube_SetLed(2, 0, layer);
-  LedCube_SetLed(2, 1, layer);
-  LedCube_SetLed(2, 2, layer);
-  LedCube_SetLed(2, 3, layer);
-
-  LedCube_SetLed(3, 0, layer);
-  LedCube_SetLed(3, 1, layer);
-  LedCube_SetLed(3, 2, layer);
-  LedCube_SetLed(3, 3, layer);
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < 4; j++) {
+      LedCube_SetLed(i, j, layer);
+    }
+  }
 
   MoveLayer();
 }
@@ -211,7 +205,5 @@ void loop()
   if ( ButtonNextState(digitalRead(4)) == 1 )
   {
     Mode = (Mode + 1) % 4;
-
-    // Mode Reset
   }
 } // End of loop.
